@@ -56,6 +56,14 @@ if(eventType==="user.created"){
 
     };
     const newUser=await createUser(user);
+    if(newUser){
+        await clerkClient.users.updateUserMetadata(id,{
+            publicMetadata:{
+                userId:newUser._id
+            }
+        });
+    }
+    return Response.json({message:"OK",user:newUser});
 }
 // Update
 if(eventType==="user.updated"){
