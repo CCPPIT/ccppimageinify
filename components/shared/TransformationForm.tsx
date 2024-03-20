@@ -13,7 +13,7 @@ import {
     FormLabel,
     FormMessage,
   } from "@/components/ui/form"
-import { aspectRatioOption, aspectRatioOptions, defaultValues, transformationTypes } from "@/constants";
+import {  aspectRatioOptions, creditFee, defaultValues, transformationTypes } from "@/constants";
 import { TransformationFormProps, Transformations } from "@/types";
 import { CustomField } from "./CustomField";
 import {
@@ -26,6 +26,9 @@ import {
 import { startTransition, useState, useTransition } from "react";
 import { AspectRatioKey, debounce, deepMergeObjects } from "@/lib/utils";
 import MediaUploader from "./MediaUploader";
+import TransformedImage from "./TransformedImage";
+import { updateCredits } from "@/lib/actions/user.actions";
+import { getCldImageUrl } from "next-cloudinary";
   
  export const formSchema = z.object({
     title:z.string(),
@@ -35,14 +38,14 @@ import MediaUploader from "./MediaUploader";
     publicId:z.string(),
 });
 
-const TransformationForm = ({action,data=null,type,userId,creditBalance,config=null}:TransformationFormProps) => {
+const TransformationForm = ({action,data= null,type,userId,creditBalance,config=null}:TransformationFormProps) => {
     const transformationType=transformationTypes[type];
     const[image,setImage]=useState(data);
     const[newTransformation,setNewTransformation]=useState <Transformations | null>(null);
     const [isSubmitting,setIsSubmitting]=useState(false);
     const [isTransforming,setIsTransformaing]=useState(false);
     const [transformationConfig,setIsTransformationConfig]=useState(config);
-    const [isPending,atartTransition]=useTransition();
+    const [isPending,startTransition] = useTransition();
 
     const initialValues= data && action === "Update" ?{
         title:data?.title,
@@ -61,10 +64,29 @@ const TransformationForm = ({action,data=null,type,userId,creditBalance,config=n
         
     });
     // 2. Define a submit handler.
-    function onSubmit(vales:z.infer<typeof formSchema>){
-         // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(vales);
+   async function onSubmit(values:z.infer<typeof formSchema>){
+      setIsSubmitting(true);
+      if(data || image){
+      const transformationUrl=getCldImageUrl({
+        width:image?.width,
+        height:image?.height,
+        src:image?.publicId,
+        ...transformationConfig
+      })
+      const imageData={
+        title:values.title,
+        publicId:image?.publicId,
+        transformationType:type,
+        width:image?.width,
+        height:image?.height,
+        config:transformationConfig,
+        transformationUrl:transformationUrl,
+        aspectRatio:values.aspectRatio,
+        prompt:values.prompt,
+        color:values.color
+      }
+    }
+    
     }
     const onSelectFieldHandler=(value:string,
         onChangeField:(value:string)=>void)=>{
@@ -99,11 +121,13 @@ const TransformationForm = ({action,data=null,type,userId,creditBalance,config=n
         setIsTransformationConfig(deepMergeObjects(
           newTransformation,
           transformationConfig
-        ));
-        setNewTransformation(null);
-        startTransition(()=>{
+        ))
+        setNewTransformation(null)
 
-        });
+        startTransition(async() => {
+          await updateCredits(userId,creditFee);
+
+        })
 
 
       }
@@ -211,6 +235,14 @@ const TransformationForm = ({action,data=null,type,userId,creditBalance,config=n
           />
         )}
 
+
+        />
+        <TransformedImage
+        image={image}
+        type={type}
+        title={form.getValues().title}
+        isTransforming={isTransforming}
+        transformationConfig={transformationConfig}
         />
 
        </div>
