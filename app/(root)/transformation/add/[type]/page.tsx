@@ -13,8 +13,8 @@ const AddTransformationsType = async ({params:{ type }}:
     
     
   const transformation = transformationTypes[type];
-   if(!userId)redirect('/sign-in');
-   const user= await getUserById(userId);
+  //  if(!userId)redirect('/sign-in');
+  // const user= await getUserById(userId);
 
   return (
     <>
@@ -25,9 +25,9 @@ const AddTransformationsType = async ({params:{ type }}:
         <TransformationForm 
 
         action="Add"
-         userId={user._id}
+        // userId={user._id}
         type={transformation.type as TransformationTypeKey}
-         creditBalance={user.creditBalance}
+        // creditBalance={user.creditBalance}
         />
         </section>
 
